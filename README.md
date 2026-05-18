@@ -1,41 +1,44 @@
-![](../../workflows/gds/badge.svg) ![](../../workflows/docs/badge.svg) ![](../../workflows/test/badge.svg) ![](../../workflows/fpga/badge.svg)
+# 2x2 Weight-Stationary Systolic Array AI Accelerator
 
-# Tiny Tapeout Verilog Project Template
+A fully verified, hardware-synthesized 2x2 Systolic Array processing core designed for low-power Edge AI matrix multiplication. This architecture has been successfully implemented in Verilog and hardened to the physical design stage using the open-source SkyWater 130nm PDK via the OpenLane ASIC flow.
 
-- [Read the documentation for project](docs/info.md)
+---
 
-## What is Tiny Tapeout?
+## Architecture Overview
+The core utilizes a **Weight-Stationary (WS)** dataflow paradigm optimized to minimize energy consumption during deep learning inference tasks. Weights are pre-loaded directly into the local registers of individual Processing Elements (PEs). Activations are then systematically streamed horizontally through the network, while partial sums accumulate vertically across clock cycles.
 
-Tiny Tapeout is an educational project that aims to make it easier and cheaper than ever to get your digital and analog designs manufactured on a real chip.
+### Processing Element (PE) Internal Architecture
+Each independent processing element contains:
+* An 8-bit multiplier register.
+* An internal multiply-accumulate (MAC) engine.
+* Pipeline registers to propagate control, activation data, and weight streams to adjacent PEs.
 
-To learn more and get started, visit https://tinytapeout.com.
+---
 
-## Set up your Verilog project
+## Technical Specifications
+* **Architecture Class:** 2x2 Systolic Processing Grid
+* **Data Width:** 8-bit Inputs (Activations/Weights), 16-bit Internal Accumulation
+* **Target Foundry PDK:** SkyWater 130nm CMOS (`sky130_fd_sc_hd`)
+* **Maximum Clock Frequency:** 50 MHz
+* **Control Lines:** Weight Load Enable (`uio_in[0]`), Compute Execution Enable (`uio_in[1]`)
 
-1. Add your Verilog files to the `src` folder.
-2. Edit the [info.yaml](info.yaml) and update information about your project, paying special attention to the `source_files` and `top_module` properties. If you are upgrading an existing Tiny Tapeout project, check out our [online info.yaml migration tool](https://tinytapeout.github.io/tt-yaml-upgrade-tool/).
-3. Edit [docs/info.md](docs/info.md) and add a description of your project.
-4. Adapt the testbench to your design. See [test/README.md](test/README.md) for more information.
+---
 
-The GitHub action will automatically build the ASIC files using [OpenLane](https://www.zerotoasiccourse.com/terminology/openlane/).
+## Verification & Simulation Strategy
+Functional integrity was verified through co-simulation using a **Cocotb** Python framework alongside the **Icarus Verilog** simulation engine.
 
-## Enable GitHub actions to build the results page
+### Verification Flow Diagram
 
-- [Enabling GitHub Pages](https://tinytapeout.com/faq/#my-github-action-is-failing-on-the-pages-part)
 
-## Resources
+The verification testbench performs the following automated operations:
+1. **System Reset:** Asserts a negative reset pulse (`rst_n`) to clear internal pipeline registers.
+2. **Weight Configuration:** Toggles `weight_load` high, streaming static weights into the 2x2 grid.
+3. **Execution Wavefront:** Asserts `compute_en`, passing activation inputs through the array.
+4. **Output Assessment:** Collects the final output values across the edge boundary pins and asserts a software check against the predicted mathematical matrix model.
 
-- [FAQ](https://tinytapeout.com/faq/)
-- [Digital design lessons](https://tinytapeout.com/digital_design/)
-- [Learn how semiconductors work](https://tinytapeout.com/siliwiz/)
-- [Join the community](https://tinytapeout.com/discord)
-- [Build your design locally](https://www.tinytapeout.com/guides/local-hardening/)
-
-## What next?
-
-- [Submit your design to the next shuttle](https://app.tinytapeout.com/).
-- Edit [this README](README.md) and explain your design, how it works, and how to test it.
-- Share your project on your social network of choice:
-  - LinkedIn [#tinytapeout](https://www.linkedin.com/search/results/content/?keywords=%23tinytapeout) [@TinyTapeout](https://www.linkedin.com/company/100708654/)
-  - Mastodon [#tinytapeout](https://chaos.social/tags/tinytapeout) [@matthewvenn](https://chaos.social/@matthewvenn)
-  - X (formerly Twitter) [#tinytapeout](https://twitter.com/hashtag/tinytapeout) [@tinytapeout](https://twitter.com/tinytapeout)
+### How to Run Simulation Locally
+To run the automated verification suite on a Linux machine with Icarus Verilog installed, execute:
+```bash
+cd verif
+make clean
+make
